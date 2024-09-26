@@ -14,13 +14,13 @@ let notice = ''
 })().catch((e) => {$.log(e)}).finally(() => {$.done({});});
 
 async function main() {
-    console.log('作者：@xzxxn777\n频道：https://t.me/xzxxn777\n群组：https://t.me/xzxxn7777\n自用机场推荐：https://xn--diqv0fut7b.com\n')
+    console.log('多账号使用回车区分，一行一个账号')
     if (!FTEJ) {
         console.log("先去boxjs填写账号密码")
         await sendMsg('先去boxjs填写账号密码');
         return
     }
-    let arr = FTEJ.split("#");
+    let arr = FTEJ.split("\n");
     for (const item of arr) {
         phone = item.split("&")[0]
         password = item.split("&")[1]
