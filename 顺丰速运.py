@@ -4,7 +4,7 @@
 打开小程序或APP-我的-积分, 捉以下几种url之一,把整个url放到变量 sfsyUrl 里,多账号换行分割
 https://mcs-mimp-web.sf-express.com/mcs-mimp/share/weChat/shareGiftReceiveRedirect
 https://mcs-mimp-web.sf-express.com/mcs-mimp/share/app/shareRedirect
-每天跑一到两次就行
+每天跑两次就行
 """
 # cron: 11 07,12 * * *
 # const $ = new Env("顺丰速运");
