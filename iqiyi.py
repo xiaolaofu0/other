@@ -5,7 +5,7 @@
 cookie为爱奇艺整个cookie
 export iqy_ck = "cookie"
 """
-const $ = new Env("爱奇艺签到");
+# const $ = new Env("爱奇艺签到");
 
 from datetime import datetime
 from hashlib import md5 as md5Encode
