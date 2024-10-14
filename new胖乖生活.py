@@ -1,6 +1,5 @@
 """
  * 胖乖生活
- * 开源，停更
  * 设置变量 PGSH_TOKEN,多号使用&隔开，青龙直接新建变量即可 ，网页获取ck：https://bigostk.github.io/pg/
  * ck格式1:token#备注
  * ck格式2: token
@@ -12,16 +11,15 @@
  * 推送变量名1：WxPusher：pg_WxPusher_token是你的WxPusher的推送组的token，pg_WxPusher_uid是你的WxPusher该推送组的用户uid，推送给谁就填写谁的，填写一个即可
  * 推送变量名2：pushplus：pg_pushplus_token是你的pushplus的token
  * Top: 上面两个推送配置哪个就使用哪个推送，两个都配置的话就两个都进行推送
- * 数据库地址变量名：pg_ckurl，保证打开数据库里面是ck，并使用回车换行隔开，或者ck#备注，并使用回车换行隔开
+ * 数据库地址变量名：pg_ckurl，保证打开数据库里面是ck，并使用&隔开，或者ck#备注，并使用&隔开
  * 不填备注默认使用隐私格式手机号作为用户名，否则使用填写的备注作为用户名
  * 出现False就是任务已完成或者不可完成
  * 推荐携趣，注册实名每天免费1k，地址：https://www.xiequ.cn/
- * cron：0 * * * *    务必使用此cron，无需担心黑号
+ * cron：0 07,18 * * *
 """
 
 ##############################
-
-ck = ""  # 本地环境ck，环境变量存在此处不生效
+ck = ''
 ckurl1 = ""  # 数据库地址，适配部分群友要求
 jh = False  # 聚合ck模式，开启即所有环境模式ck都生效，都会合成为一个ck列表，关闭则优先处理环境变量，默认为True，False为关闭
 
@@ -30,6 +28,7 @@ jh = False  # 聚合ck模式，开启即所有环境模式ck都生效，都会�
 
 bf1 = True  # True开启并发，False关闭并发
 bfsum1 = 3  # 并发数,开启并发模式生效
+lljf = 1  # 运行新版浏览任务，22金币,只有10天
 
 # -------推送配置区，自行填写-------
 
@@ -38,7 +37,7 @@ ts1 = False  # True开启推送，False关闭推送
 # -------代理配置区，自行填写-------
 
 dl1 = False  # True开启代理，False关闭代理
-dl_url = ""  # 代理池api
+dl_url = 'http://api.xiequ.cn/VAD/GetIp.aspx?act=get&uid=142478&vkey=90DC2F27966D0BA15CA31194790904BB&num=1&time=30&plat=1&re=0&type=0&so=1&ow=1&spl=1&addr=&db=1'  # 代理池api
 
 # -----代理时间配置区，秒为单位------
 
@@ -47,8 +46,8 @@ qqtime = 6  # 请求超时时间
 
 # -----时间配置区，默认即可------
 
-a = "6"
-b = "22"  # 表示6-22点之间才执行任务
+a = "1"
+b = "23"  # 表示6-22点之间才执行任务
 
 #############################
 # ---------勿动区----------
@@ -71,6 +70,7 @@ from urllib.parse import urlparse
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib3.exceptions import InsecureRequestWarning
+from requests_toolbelt import MultipartEncoder
 
 dl = os.environ.get('pg_dl', dl1)
 proxy_api_url = os.environ.get('pg_dlurl', dl_url)
@@ -225,7 +225,7 @@ class PGSH:
 
 
     # 检测token有效性
-    def name(self):
+    def name(self,source):
         try:
             data = {'token': self.token}
             if dl:
@@ -254,7 +254,8 @@ class PGSH:
                     r = requests.post(self.check_url, data=data, headers=self.hd).json()
                 coin_code = r['code']
                 balance = r['data']['integral'] if coin_code == 0 else 'N/A'
-                print(f"[{self.phone}] ✅登录成功！积分余额: {balance}")
+                if source == 1:
+                    print(f"[{self.phone}] ✅登录成功！积分余额: {balance}")
                 return self.phone
             else:
                 msg = re["msg"]
@@ -478,6 +479,17 @@ class PGSH:
                 tasks = response.get('data', {}).get('items', [])
                 if tasks:
                     print(f'[{self.phone}] ✅获取到{len(tasks)}个日常任务')
+
+                    # 筛选排除不执行的任务
+                    not_task_titles = ["免费权益领取", "完成任务赚现金", "支付宝花呗开通", "开通支付宝小荷包", "更多任务赚积分", "开通云闪付无感支付", "完善个人信息"]
+                    # 只筛选任务状态为0 即未执行完毕的任务
+                    tasks = [task for task in tasks if task['completedStatus'] == 0 and task['title'] not in not_task_titles]
+                    # 筛选条件，即要匹配的title列表   需要执行多次的任务
+                    target_titles = ["浏览广告赚积分", "来乖乖果园赚积分"]
+                    # 筛选数据
+                    filtered_tasks = [task for task in tasks if task['title'] in target_titles]
+                    tasks = tasks + filtered_tasks
+
                     for item in tasks:
                         title = item["title"]
                         id1 = item["taskCode"]
@@ -511,6 +523,54 @@ class PGSH:
             print(f"❎网络请求错误: {e}")
         except Exception as e:
             print(f"❎遍历日常出现错误: {e}")
+
+    # 浏览任务
+    def lljf(self):
+        try:
+            data = f"taskCode=8b475b42-df8b-4039-b4c1-f9a0174a611a&token={self.token}"
+            sign, sign1, timestamp = self.sg("https://userapi.qiekj.com/task/queryByType")
+            self.hd['sign'] = sign
+            self.hd['timestamp'] = timestamp
+            response = requests.post("https://userapi.qiekj.com/task/queryByType", data=data, headers=self.hd).json()
+            code = response.get('code', -1)
+            if code == 0:
+                tasks = response.get('data', {}).get('subtaskList', [])
+                if tasks:
+                    print(f'[{self.phone}] ✅获取到{len(tasks)}个浏览任务')
+                    for item in tasks:
+                        title = item["subtaskName"]
+                        id1 = item["taskCode"]
+                        id2 = item["subtaskCode"]
+                        data = {'taskCode': id1, 'subtaskCode': id2, 'token': self.token}
+                        sign, sign1, timestamp = self.sg(self.rcrw_url)
+                        self.hd['sign'] = sign
+                        self.hd['timestamp'] = timestamp
+                        if dl:
+                            time.sleep(2)
+                        else:
+                            time.sleep(6)
+                        if dl:
+                            response1 = requests.post(self.rcrw_url, data=data, headers=self.hd, proxies=global_proxy,
+                                                      timeout=10, verify=False).json()
+                        else:
+                            response1 = requests.post(self.rcrw_url, data=data, headers=self.hd).json()
+                        data1 = response1.get("data", {})
+                        if data1:
+                            print(f'[{self.phone}] ✅完成浏览任务[{title}]成功==> {data1}')
+                        else:
+                            print(f'[{self.phone}] ❎完成浏览任务[{title}]失败==> {data1}')
+                        if dl:
+                            time.sleep(2)
+                        else:
+                            time.sleep(6)
+                else:
+                    print("❎获取任务列表为空!")
+            else:
+                print("❎获取任务列表失败!")
+        except requests.RequestException as e:
+            print(f"❎网络请求错误: {e}")
+        except Exception as e:
+            print(f"❎遍历浏览出现错误: {e}")
 
     # 领取阶梯奖励
     def jtjl(self):
@@ -688,7 +748,79 @@ class PGSH:
                     break
                 time.sleep(1)
 
-    def xieru(self, rw, dk):
+    # 每日答题
+    def queryans(self):
+        # print("------开始每日答题------")
+        url = "https://userapi.qiekj.com/integralRecord/statisticsAnswer"
+        start_date = datetime(2024, 9, 1)
+        start_number = 13
+        current_date = datetime.now()
+        delta = current_date - start_date
+        days_since_start = delta.days
+        current_number = start_number + days_since_start
+
+        multipart_data = MultipartEncoder(
+            fields={
+                'number': str(current_number),
+                'isCorrect': 'true',
+                'token': self.token
+            }
+        )
+        sign, sign1, timestamp = self.sg(url)
+
+        headers = self.hd1;
+        headers['sign'] = sign
+        headers['timestamp'] = timestamp
+        headers.update({
+            'Content-Type': multipart_data.content_type,
+            'Origin': 'https://h5user.qiekj.com',
+            'Referer': 'https://h5user.qiekj.com/'
+        })
+        time.sleep(2)
+        r1 = ""
+        phone = ""
+        try:
+            if dl:
+                r1 = requests.post(url, headers=headers, proxies=global_proxy, data=multipart_data).json()
+            else:
+                r1 = requests.post(url, headers=headers, data=multipart_data).json()
+            result = r1
+            # 获取用户账号
+            hd1 = {
+                'User-Agent': "okhttp/3.14.9",
+                'Accept': 'application/json, text/plain, */*',
+                'Version': "1.57.2",
+                'Content-Type': "application/x-www-form-urlencoded;charset=UTF-8",
+                'Authorization': self.token,
+                'channel': "android_app"
+            }
+            data = {'token': self.token}
+            r = requests.post(self.phone_url, data=data, headers=hd1).json()
+            if r['code'] == 0:
+                phone = p(r['data']['phone'])
+
+            if result['code'] == 0:
+                if result['data']['isReward']:
+                    reward = result['data']['rewardNum']
+                    print(f"[{phone}]✅每日答题成功，获得奖励：{reward}")
+                else:
+                    print(result)
+                    print(f"[{phone}]❎每日答题已完成，今日无法再获得奖励")
+            else:
+                if result['msg'] == "版本过低，请升级APP后再使用":
+                    print(f"[{phone}]❎每日答题失败：{result['msg']}")
+                    print("重试")
+                    self.queryans()
+        except Exception as e:
+            print(f"每日答题出错：{str(e)}")
+            if dl:
+                time.sleep(2)
+            else:
+                time.sleep(6)
+
+    def xieru(self, rw, dk, dt):
+        default_rw = 0
+        default_dk = 0
         try:
             new_data = {
                 "pgid": str(self.id)
@@ -701,17 +833,23 @@ class PGSH:
                     data = json.load(file)
                 except json.decoder.JSONDecodeError:
                     data = {}
+
             if rw == 1 and new_data["pgid"] in data and data[new_data["pgid"]]["rw"] == 1:
                 print("任务记录已存在。")
                 return False
             elif dk == 1 and new_data["pgid"] in data and data[new_data["pgid"]]["dk"] == 1:
                 print("打卡记录已存在。")
                 return False
+            elif dt == 1 and new_data["pgid"] in data and data[new_data["pgid"]]["dt"] == 1:
+                print("答题记录已存在。")
+                return False
             else:
                 if rw == 1:
-                    data[new_data["pgid"]] = {"rw": 1, "dk": 0}
+                    data[new_data["pgid"]] = {"rw": 1, "dk": 0, "dt": 0}
                 elif dk == 1:
-                    data[new_data["pgid"]] = {"rw": 1, "dk": 1}
+                    data[new_data["pgid"]] = {"rw": 1, "dk": 1, "dt": 1}
+                elif dt == 1:
+                    data[new_data["pgid"]] = {"rw": 1, "dk": 0, "dt": 1}
             with open("./pgsh.json", "w") as file:
                 json.dump(data, file)
             print("✅写入记录文件成功。")
@@ -722,7 +860,7 @@ class PGSH:
                 json.dump({}, file)
 
     # 读取指定值是否存在
-    def duqu(self, aa, rw, dk):
+    def duqu(self, aa, rw, dk, dt):
         try:
             if not os.path.exists("./pgsh.json"):
                 with open("./pgsh.json", "w") as file:
@@ -743,13 +881,18 @@ class PGSH:
                     return data[str(aa)]["dk"]
                 else:
                     return False
+            elif dt == 1:
+                if str(aa) in data:
+                    return data[str(aa)]["dt"]
+                else:
+                    return False
         except Exception as e:
             print(f"读取记录文件出现错误,初始化文件内容")
             with open("./pgsh.json", "w") as file:
                 json.dump({}, file)
 
     # 今日积分
-    def jrjf(self, i, token1):
+    def jrjf(self, i, token1 ,source):
         token = token1.split('#')[0]
         try:
             hd1 = {
@@ -794,11 +937,19 @@ class PGSH:
                     re_response = requests.post(self.jrjf_url, headers=hd, files=data).json()
                     current_date = datetime.now().strftime('%Y-%m-%d')
                     total_amount = 0
+                    xieru_tips = ''
+                    default_num = 170
                     for item in re_response['data']['items']:
                         received_date = item['receivedTime'][:10]
                         if received_date == current_date:
                             total_amount += item['amount']
-                    print(f"[{phone}] ✅今日获得积分: {total_amount}")
+                    if source == 2:
+                        if total_amount >= default_num and self.name(2):
+                            print(f"写入日志状态：{self.xieru(1, 0, 0)}")
+                        else:
+                            print(f"写入日志状态：未达标写入目标{default_num}积分")
+                    else:
+                        print(f"[{phone}] ✅今日获得积分: {total_amount},账户总积分:{balance}")
                     return {
                         '序号': i + 1,
                         '用户': phone,
@@ -843,7 +994,7 @@ class PGSH:
             msg_list = []
             print(f"======开始查询所有账号当日收益======")
             for n, yy in enumerate(cookies):
-                msg = self.jrjf(n, yy)
+                msg = self.jrjf(n, yy,1)
                 msg_list.append(msg)
             sorted_data = sorted(msg_list, key=lambda x: x['序号'])
             table_content = ''
@@ -855,10 +1006,10 @@ class PGSH:
                 self.send_msg()
         except Exception as e:
             print(f"查询所有账号当日收益出现错误: {e}")
-        if int(b) <= now_time or now_time <= 1:
-            with open("./pgsh.json", "w") as file:
-                json.dump({}, file)
-            print("已重置文件内容")
+        # if int(b) <= now_time or now_time <= 1:
+        #     with open("./pgsh.json", "w") as file:
+        #         json.dump({}, file)
+        #     print("已重置文件内容")
 
     def send_msg(self):
         if 'WxPusher_token' in os.environ and os.environ['WxPusher_token'] is not None:
@@ -899,12 +1050,13 @@ class PGSH:
             print(f"pushplus推送出现错误: {e}")
 
     def start(self):
-        if self.name():
+        if self.name(1):
+            # self.jrjf(i, self.token, 2)
             print("-----执行领取时间段奖励-----")
             self.timejl()
             if int(a) <= now_time < int(b):
                 print("--------滴滴车发车，坐稳了--------\\\n")
-                if self.duqu(self.id, 1, 0) == 0:
+                if self.duqu(self.id, 1, 0, 0) == 0:
                     print("-----开始执行签到-----")
                     self.sign()
                     if dl:
@@ -965,6 +1117,13 @@ class PGSH:
                         time.sleep(2)
                     else:
                         time.sleep(6)
+                    if lljf == 1:
+                        print("-----开始执行浏览任务-----")
+                        self.lljf()
+                        if dl:
+                            time.sleep(2)
+                        else:
+                            time.sleep(6)
                     print("-----执行领取阶梯奖励----")
                     self.jtjl()
                     if dl:
@@ -972,21 +1131,28 @@ class PGSH:
                     else:
                         time.sleep(6)
                     print("-----任务执行完毕，记录id-----")
-                    self.xieru(1, 0)
+                    self.jrjf(i, self.token, 2)
+                    # self.xieru(1, 0)
                 else:
                     print("当前账号已执行过任务，跳过执行")
             else:
                 print(f"当前时间非{int(a)}-{int(b)}，跳过今日任务")
-            if 14 <= now_time <= 16:
+            if 14 <= now_time <= 23:
                 print("-----开始执行瓜分打卡积分-----")
-                if self.duqu(self.id, 0, 1) == 0:
+                if self.duqu(self.id, 0, 1, 0) == 0:
                     self.gfjf1()
-                    self.xieru(0, 1)
+                    self.xieru(0, 1, 0)
                 else:
                     print("当前账号已执行过任务，跳过执行")
             else:
                 print(f"当前时间非14-16，跳过瓜分打卡积分")
 
+            if self.duqu(self.id, 0, 0, 1) == 0:
+                print("-----开始每日答题-----")
+                self.queryans()
+                self.xieru(0, 0, 1)
+            else:
+                print("当前账号已执行过答题任务，跳过执行")
 
 if __name__ == '__main__':
     print(f"当前版本: {v}")
@@ -1005,7 +1171,7 @@ if __name__ == '__main__':
         if not ck1:
             print("变量为空，请设置其中一个变量后再运行")
             exit(-1)
-        cookie = '\n'.join(ck1)
+        cookie = '&'.join(ck1)
     else:
         if 'PGSH_TOKEN' in os.environ:
             cookie = os.environ.get('PGSH_TOKEN')
@@ -1019,7 +1185,7 @@ if __name__ == '__main__':
         if cookie == "":
             print("本地及数据库地址变量为空，请设置其中一个变量后再运行")
             exit(-1)
-    cookies = cookie.split("\n")
+    cookies = cookie.split("&")
     print(f"胖乖生活共获取到 {len(cookies)} 个账号")
     now_time = datetime.now().hour
     if dl:
