@@ -1,22 +1,7 @@
 """
- * 胖乖生活
- * 开源，停更
- * 设置变量 PGSH_TOKEN,多号使用&隔开，青龙直接新建变量即可 ，网页获取ck：https://bigostk.github.io/pg/
- * ck格式1:token#备注
- * ck格式2: token
- * 代理开关变量名：pg_dl，True为开启代理模式，False为关闭，默认为False
- * 代理变量名：pg_dlurl，代理地址是动态代理api接口，一次性提取一个，选择txt格式，\r\n或者\n模式都可以
- * 并发开关变量名：pg_bf，True为开启并发模式，False为关闭，默认为False
- * 并发数量变量名：pg_bfsum，并发几个就写几个，默认为3
- * 推送开关变量名：pg_ts，True为开启推送，False为关闭，默认为False
- * 推送变量名1：WxPusher：pg_WxPusher_token是你的WxPusher的推送组的token，pg_WxPusher_uid是你的WxPusher该推送组的用户uid，推送给谁就填写谁的，填写一个即可
- * 推送变量名2：pushplus：pg_pushplus_token是你的pushplus的token
- * Top: 上面两个推送配置哪个就使用哪个推送，两个都配置的话就两个都进行推送
- * 数据库地址变量名：pg_ckurl，保证打开数据库里面是ck，并使用&隔开，或者ck#备注，并使用&隔开
- * 不填备注默认使用隐私格式手机号作为用户名，否则使用填写的备注作为用户名
- * 出现False就是任务已完成或者不可完成
- * 推荐携趣，注册实名每天免费1k，地址：https://www.xiequ.cn/
- * cron：0 * * * *    务必使用此cron，无需担心黑号
+ * 胖乖生活余额查询
+ * 设置变量 PGSH_TOKEN,多号使用回车或者&隔开，青龙直接新建变量即可 ，网页获取ck：https://bigostk.github.io/pg/
+ * cron= 01 12 2,12,22 * *
 """
 
 ##############################
