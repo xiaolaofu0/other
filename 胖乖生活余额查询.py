@@ -15,7 +15,7 @@ jh = False  # 聚合ck模式，开启即所有环境模式ck都生效，都会�
 
 bf1 = True  # True开启并发，False关闭并发
 bfsum1 = 3  # 并发数,开启并发模式生效
-lljf = 1 #运行新版浏览任务，22金币,只有10天
+lljf = 1  # 运行新版浏览任务，22金币,只有10天
 
 # -------推送配置区，自行填写-------
 
@@ -33,8 +33,8 @@ qqtime = 6  # 请求超时时间
 
 # -----时间配置区，默认即可------
 
-a = "6"
-b = "22"  # 表示6-22点之间才执行任务
+a = "1"
+b = "23"  # 表示6-22点之间才执行任务
 
 #############################
 # ---------勿动区----------
@@ -57,6 +57,7 @@ from urllib.parse import urlparse
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib3.exceptions import InsecureRequestWarning
+from requests_toolbelt import MultipartEncoder
 
 dl = os.environ.get('pg_dl', dl1)
 proxy_api_url = os.environ.get('pg_dlurl', dl_url)
@@ -170,7 +171,7 @@ class PGSH:
         self.hd = {
             'User-Agent': "okhttp/3.14.9",
             'Accept': 'application/json, text/plain, */*',
-            'Version': "1.58.0",
+            'Version': "1.57.2",
             'Content-Type': "application/x-www-form-urlencoded;charset=UTF-8",
             'Authorization': self.token,
             'channel': "android_app"
@@ -180,7 +181,7 @@ class PGSH:
             'Connection': "Keep-Alive",
             'Accept-Encoding': "gzip",
             'Authorization': self.token,
-            'Version': "1.58.0",
+            'Version': "1.57.2",
             'channel': "android_app",
             'phoneBrand': "Redmi",
             'Content-Type': "application/x-www-form-urlencoded;charset=UTF-8"
@@ -203,20 +204,51 @@ class PGSH:
         timestamp = str(int(time.time() * 1000))
         parsed_url = urlparse(y)
         path = parsed_url.path
-        data = f"appSecret=nFU9pbG8YQoAe1kFh+E7eyrdlSLglwEJeA0wwHB1j5o=&channel=android_app&timestamp={timestamp}&token={self.token}&version=1.58.0&{path}"
+        data = f"appSecret=nFU9pbG8YQoAe1kFh+E7eyrdlSLglwEJeA0wwHB1j5o=&channel=android_app&timestamp={timestamp}&token={self.token}&version=1.57.2&{path}"
         data1 = f"appSecret=Ew+ZSuppXZoA9YzBHgHmRvzt0Bw1CpwlQQtSl49QNhY=&channel=alipay&timestamp={timestamp}&token={self.token}&{path}"
         sign = hashlib.sha256(data.encode()).hexdigest()
         sign1 = hashlib.sha256(data1.encode()).hexdigest()
         return sign, sign1, timestamp
-        
+    # 读取指定值是否存在
+    def duqu(self, aa, rw, dk, dt):
+        try:
+            if not os.path.exists("./pgsh.json"):
+                with open("./pgsh.json", "w") as file:
+                    json.dump({}, file)
+
+            with open("./pgsh.json", "r") as file:
+                try:
+                    data = json.load(file)
+                except json.decoder.JSONDecodeError:
+                    data = {}
+            if rw == 1:
+                if str(aa) in data:
+                    return data[str(aa)]["rw"]
+                else:
+                    return False
+            elif dk == 1:
+                if str(aa) in data:
+                    return data[str(aa)]["dk"]
+                else:
+                    return False
+            elif dt == 1:
+                if str(aa) in data:
+                    return data[str(aa)]["dt"]
+                else:
+                    return False
+        except Exception as e:
+            print(f"读取记录文件出现错误,初始化文件内容")
+            with open("./pgsh.json", "w") as file:
+                json.dump({}, file)
+
     # 今日积分
-    def jrjf(self, i, token1):
+    def jrjf(self, i, token1 ,source):
         token = token1.split('#')[0]
         try:
             hd1 = {
                 'User-Agent': "okhttp/3.14.9",
                 'Accept': 'application/json, text/plain, */*',
-                'Version': "1.58.0",
+                'Version': "1.57.2",
                 'Content-Type': "application/x-www-form-urlencoded;charset=UTF-8",
                 'Authorization': token,
                 'channel': "android_app"
@@ -255,11 +287,19 @@ class PGSH:
                     re_response = requests.post(self.jrjf_url, headers=hd, files=data).json()
                     current_date = datetime.now().strftime('%Y-%m-%d')
                     total_amount = 0
+                    xieru_tips = ''
+                    default_num = 170
                     for item in re_response['data']['items']:
                         received_date = item['receivedTime'][:10]
                         if received_date == current_date:
                             total_amount += item['amount']
-                    print(f"[{phone}] ✅今日获得积分: {total_amount}")
+                    if source == 2:
+                        if total_amount >= default_num and self.name(2):
+                            print(f"写入日志状态：{self.xieru(1, 0, 0)}")
+                        else:
+                            print(f"写入日志状态：未达标写入目标{default_num}积分")
+                    else:
+                        print(f"[{phone}] ✅今日获得积分: {total_amount},账户总积分:{balance}")
                     return {
                         '序号': i + 1,
                         '用户': phone,
@@ -304,7 +344,7 @@ class PGSH:
             msg_list = []
             print(f"======开始查询所有账号当日收益======")
             for n, yy in enumerate(cookies):
-                msg = self.jrjf(n, yy)
+                msg = self.jrjf(n, yy,1)
                 msg_list.append(msg)
             sorted_data = sorted(msg_list, key=lambda x: x['序号'])
             table_content = ''
@@ -316,10 +356,6 @@ class PGSH:
                 self.send_msg()
         except Exception as e:
             print(f"查询所有账号当日收益出现错误: {e}")
-        if int(b) <= now_time or now_time <= 1:
-            with open("./pgsh.json", "w") as file:
-                json.dump({}, file)
-            print("已重置文件内容")
 
     def send_msg(self):
         if 'WxPusher_token' in os.environ and os.environ['WxPusher_token'] is not None:
@@ -344,6 +380,7 @@ class PGSH:
             print(f'WxPusher推送结果：{msg}\\\n')
         except Exception as e:
             print(f"WxPusher推送出现错误: {e}")
+
     def pushplus_ts(self):
         try:
             url = 'https://www.pushplus.plus/send/'
@@ -359,9 +396,10 @@ class PGSH:
             print(f"pushplus推送出现错误: {e}")
 
     def start(self):
-        if self.name():
-                print("-----执行领取时间段奖励-----")
-                self.timejl()    
+        if self.name(1):
+            print("-----执行领取时间段奖励-----")
+            self.timejl()
+
 if __name__ == '__main__':
     requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
     print = partial(print, flush=True)
@@ -378,7 +416,7 @@ if __name__ == '__main__':
         if not ck1:
             print("变量为空，请设置其中一个变量后再运行")
             exit(-1)
-        cookie = '\n'.join(ck1)
+        cookie = '&'.join(ck1)
     else:
         if 'PGSH_TOKEN' in os.environ:
             cookie = os.environ.get('PGSH_TOKEN')
@@ -392,7 +430,7 @@ if __name__ == '__main__':
         if cookie == "":
             print("本地及数据库地址变量为空，请设置其中一个变量后再运行")
             exit(-1)
-    cookies = cookie.split("\n")
+    cookies = cookie.split("&")
     print(f"胖乖生活共获取到 {len(cookies)} 个账号")
     now_time = datetime.now().hour
     if dl:
@@ -405,6 +443,7 @@ if __name__ == '__main__':
             with ThreadPoolExecutor(max_workers=int(bfsum)) as executor:
                 futures = [executor.submit(PGSH(ck).start) for ck in cookies]
                 for i, future in enumerate(as_completed(futures)):
+                    print(f"======执行第{i + 1}个账号======")
                     future.result()
             stop_event.set()
             time.sleep(2)
