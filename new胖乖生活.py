@@ -15,7 +15,7 @@
  * 不填备注默认使用隐私格式手机号作为用户名，否则使用填写的备注作为用户名
  * 出现False就是任务已完成或者不可完成
  * 推荐携趣，注册实名每天免费1k，地址：https://www.xiequ.cn/
- * cron：0 07,18 * * *
+ * cron：0 01,14 * * *
 """
 
 ##############################
@@ -37,7 +37,7 @@ ts1 = False  # True开启推送，False关闭推送
 # -------代理配置区，自行填写-------
 
 dl1 = False  # True开启代理，False关闭代理
-dl_url = 'http://api.xiequ.cn/VAD/GetIp.aspx?act=get&uid=142478&vkey=90DC2F27966D0BA15CA31194790904BB&num=1&time=30&plat=1&re=0&type=0&so=1&ow=1&spl=1&addr=&db=1'  # 代理池api
+dl_url = 'http://api.xiequ.cn/VAD/GetIp.aspx?act=getturn82&uid=150098&vkey=617AF361D1745BECBC40DD5707FF3C27&num=1&time=6&plat=1&re=0&type=7&so=1&group=51&ow=1&spl=4&addr=&db=1'  # 代理池api
 
 # -----代理时间配置区，秒为单位------
 
@@ -1171,7 +1171,7 @@ if __name__ == '__main__':
         if not ck1:
             print("变量为空，请设置其中一个变量后再运行")
             exit(-1)
-        cookie = '&'.join(ck1)
+        cookie = '\n'.join(ck1)
     else:
         if 'PGSH_TOKEN' in os.environ:
             cookie = os.environ.get('PGSH_TOKEN')
@@ -1185,7 +1185,7 @@ if __name__ == '__main__':
         if cookie == "":
             print("本地及数据库地址变量为空，请设置其中一个变量后再运行")
             exit(-1)
-    cookies = cookie.split("&")
+    cookies = cookie.split("\n")
     print(f"胖乖生活共获取到 {len(cookies)} 个账号")
     now_time = datetime.now().hour
     if dl:
