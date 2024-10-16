@@ -15,7 +15,7 @@
  * 不填备注默认使用隐私格式手机号作为用户名，否则使用填写的备注作为用户名
  * 出现False就是任务已完成或者不可完成
  * 推荐携趣，注册实名每天免费1k，地址：https://www.xiequ.cn/
- * cron：03 01,14 * * *
+ * cron：0 01,14 * * *
 """
 
 ##############################
@@ -1171,7 +1171,7 @@ if __name__ == '__main__':
         if not ck1:
             print("变量为空，请设置其中一个变量后再运行")
             exit(-1)
-        cookie = '&'.join(ck1)
+        cookie = '\n'.join(ck1)
     else:
         if 'PGSH_TOKEN' in os.environ:
             cookie = os.environ.get('PGSH_TOKEN')
@@ -1185,7 +1185,7 @@ if __name__ == '__main__':
         if cookie == "":
             print("本地及数据库地址变量为空，请设置其中一个变量后再运行")
             exit(-1)
-    cookies = cookie.split("&")
+    cookies = cookie.split("\n")
     print(f"胖乖生活共获取到 {len(cookies)} 个账号")
     now_time = datetime.now().hour
     if dl:
