@@ -1,12 +1,11 @@
 """
- * 胖乖生活余额查询
- * 设置变量 PGSH_TOKEN,多号使用回车或者&隔开，青龙直接新建变量即可 ，网页获取ck：https://bigostk.github.io/pg/
- * cron= 01 12 2,12,22 * *
+ * 胖乖生活积分余额查询
+ * 设置变量 PGSH_TOKEN ,多号使用回车隔开，青龙直接新建变量即可 ，网页获取ck：https://bigostk.github.io/pg/
+ * cron：02 12 * * 6
 """
 
 ##############################
-
-ck = ""  # 本地环境ck，环境变量存在此处不生效
+ck = ''
 ckurl1 = ""  # 数据库地址，适配部分群友要求
 jh = False  # 聚合ck模式，开启即所有环境模式ck都生效，都会合成为一个ck列表，关闭则优先处理环境变量，默认为True，False为关闭
 
@@ -24,7 +23,7 @@ ts1 = False  # True开启推送，False关闭推送
 # -------代理配置区，自行填写-------
 
 dl1 = False  # True开启代理，False关闭代理
-dl_url = ""  # 代理池api
+dl_url = 'http://api.xiequ.cn/VAD/GetIp.aspx?act=getturn82&uid=150098&vkey=617AF361D1745BECBC40DD5707FF3C27&num=1&time=6&plat=1&re=0&type=7&so=1&group=51&ow=1&spl=4&addr=&db=1'  # 代理池api
 
 # -----代理时间配置区，秒为单位------
 
@@ -209,6 +208,7 @@ class PGSH:
         sign = hashlib.sha256(data.encode()).hexdigest()
         sign1 = hashlib.sha256(data1.encode()).hexdigest()
         return sign, sign1, timestamp
+
     # 读取指定值是否存在
     def duqu(self, aa, rw, dk, dt):
         try:
@@ -401,6 +401,7 @@ class PGSH:
             self.timejl()
 
 if __name__ == '__main__':
+    print(f"当前版本: {v}")
     requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
     print = partial(print, flush=True)
     if jh:
@@ -416,7 +417,7 @@ if __name__ == '__main__':
         if not ck1:
             print("变量为空，请设置其中一个变量后再运行")
             exit(-1)
-        cookie = '&'.join(ck1)
+        cookie = '\n'.join(ck1)
     else:
         if 'PGSH_TOKEN' in os.environ:
             cookie = os.environ.get('PGSH_TOKEN')
@@ -430,7 +431,7 @@ if __name__ == '__main__':
         if cookie == "":
             print("本地及数据库地址变量为空，请设置其中一个变量后再运行")
             exit(-1)
-    cookies = cookie.split("&")
+    cookies = cookie.split("\n")
     print(f"胖乖生活共获取到 {len(cookies)} 个账号")
     now_time = datetime.now().hour
     if dl:
